@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>情报配置台</title>
+<style>
+  :root {
+    --bg:#FAF9F6; --ink:#16181A; --body:#2C2E30; --muted:#8A8781;
+    --line:#E5E1D8; --card:#FFFFFF; --amber:#C05621;
+    --ok:#3B6D11; --okbg:#F0F7E6; --warn:#BA7517; --warnbg:#FFF7E6;
+    --err:#B42318; --errbg:#FEF3F2; --chip:#F2EFE9;
+    --mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#16181A; --ink:#E8E6E1; --body:#C9C7C2; --muted:#8A8781;
+      --line:#2E3033; --card:#1E2022; --amber:#D97B45;
+      --ok:#97C459; --okbg:#25301C; --warn:#EF9F27; --warnbg:#332811;
+      --err:#F97066; --errbg:#331C1A; --chip:#26292C; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--body);font-family:var(--sans);font-size:14px;line-height:1.65}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 80px}
+  a{color:var(--amber)}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:4px}
+  h1{font-size:22px;color:var(--ink);margin:0;letter-spacing:.5px}
+  .sub{color:var(--muted);font-size:12.5px}
+  .projbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:18px 0 20px;padding:12px 14px;
+    background:var(--card);border:1px solid var(--line);border-radius:8px}
+  .projbar .tag{font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+  .projbar select,.projbar input{font-family:var(--sans);font-size:13px;padding:5px 8px;border:1px solid var(--line);
+    border-radius:5px;background:var(--card);color:var(--ink)}
+  .projbar .meta{margin-left:auto;color:var(--muted);font-size:12px}
+  .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;background:var(--chip);color:var(--body)}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .tab{padding:9px 16px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-size:13.5px;user-select:none}
+  .tab.on{color:var(--amber);border-bottom-color:var(--amber);font-weight:600}
+  .panel{display:none}.panel.on{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:14px}
+  .card h3{margin:0 0 4px;font-size:15px;color:var(--ink)}
+  .hint{color:var(--muted);font-size:12px;margin:0 0 12px}
+  textarea{width:100%;min-height:420px;font-family:var(--mono);font-size:12.5px;line-height:1.6;
+    padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--body);resize:vertical;white-space:pre;overflow-wrap:normal;overflow-x:auto}
+  .group{border:1px solid var(--line);border-radius:7px;margin-bottom:12px;overflow:hidden}
+  .ghead{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--chip);cursor:pointer}
+  .ghead .gname{font-weight:600;color:var(--ink)}
+  .ghead .gcount{font-size:11px;color:var(--muted)}
+  .ghead .arrow{margin-left:auto;color:var(--muted);font-size:12px}
+  .gbody{padding:10px 12px 12px}
+  .row{display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px dashed var(--line)}
+  .row:last-child{border-bottom:none}
+  .row input[type=text]{flex:1;font-family:var(--mono);font-size:12.5px;padding:4px 7px;border:1px solid transparent;
+    border-radius:4px;background:transparent;color:var(--body)}
+  .row input[type=text]:hover,.row input[type=text]:focus{border-color:var(--line);background:var(--bg);outline:none}
+  .gnote{font-size:11.5px;color:var(--muted);padding:3px 0 3px 34px;line-height:1.5}
+  .ptype{flex:0 0 auto;width:26px;text-align:center;font-size:10px;color:var(--muted)}
+  .del{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:2px 5px}
+  .del:hover{color:var(--err)}
+  .addrow{display:flex;gap:8px;margin-top:8px}
+  .addrow input{flex:1;font-family:var(--mono);font-size:12.5px;padding:5px 8px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--body)}
+  button.btn{font-family:var(--sans);font-size:13px;padding:7px 14px;border:1px solid var(--line);border-radius:6px;
+    background:var(--card);color:var(--body);cursor:pointer}
+  button.btn:hover{border-color:var(--muted)}
+  button.primary{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:600}
+  button.primary:hover{filter:brightness(1.08)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+  .toolbar .spacer{flex:1}
+  .stat{font-size:12px;color:var(--muted)}
+  .stat b{color:var(--ink);font-weight:600}
+  .dirty{color:var(--warn);font-size:12px}
+  .notice{padding:10px 12px;border-radius:6px;font-size:12.5px;margin-bottom:14px}
+  .notice.err{background:var(--errbg);color:var(--err)}
+  .notice.ok{background:var(--okbg);color:var(--ok)}
+  .notice.warn{background:var(--warnbg);color:var(--warn)}
+  .secretbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 16px;background:var(--card);
+    border:1px solid var(--line);border-radius:8px;margin-bottom:14px}
+  .secretbar input[type=password]{flex:1;min-width:220px;font-family:var(--mono);font-size:12.5px;padding:7px 10px;
+    border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--body)}
+  .secretbar label{font-size:12.5px;color:var(--ink);font-weight:600}
+  details{font-size:12.5px;color:var(--muted)}
+  summary{cursor:pointer;color:var(--amber)}
+  details ol{padding-left:20px}
+  .diff{font-family:var(--mono);font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:260px;overflow:auto;
+    border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--bg);margin-top:10px}
+  .diff .add{color:var(--ok)}.diff .del2{color:var(--err)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+  .overlay.on{display:flex}
+  .modal{background:var(--card);border-radius:10px;padding:22px;max-width:680px;width:100%;max-height:86vh;overflow:auto}
+  .modal h2{margin:0 0 10px;font-size:17px;color:var(--ink)}
+  .modal .foot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+  code{font-family:var(--mono);font-size:12px;background:var(--chip);padding:1px 5px;border-radius:3px}
+  footer{margin-top:30px;color:var(--muted);font-size:12px;text-align:center}
+  .wizform{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+  .wizform label{font-size:12px;color:var(--muted);display:block;margin-bottom:3px}
+  .wizform input,.wizform select{font-family:var(--sans);font-size:13px;padding:6px 9px;border:1px solid var(--line);
+    border-radius:5px;background:var(--bg);color:var(--ink)}
+  #wizLog{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;
+    padding:10px;white-space:pre-wrap;max-height:240px;overflow:auto;margin-top:10px;display:none;color:var(--body)}
+  .ck{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .ck:last-child{border-bottom:none}
+  .ck .num{flex:0 0 22px;height:22px;border-radius:50%;background:var(--chip);color:var(--ink);font-size:11px;
+    display:flex;align-items:center;justify-content:center;font-weight:600;margin-top:2px}
+  .ck .body{flex:1;font-size:12.5px}
+  .ck .body b{color:var(--ink);font-family:var(--mono);font-size:12px}
+  .ck .body .why{color:var(--muted);font-size:11.5px;margin-top:2px}
+  .ck button,.ck a{font-size:12px;padding:3px 10px;white-space:nowrap;align-self:center;cursor:pointer}
+  .projrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+  .projrow:last-child{border-bottom:none}
+  .projrow .repo{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>情报配置台</h1>
+    <span class="sub">改词表和配置，直接写回仓库 · 也能一键克隆新情报台</span>
+  </header>
+
+  <div class="projbar">
+    <span class="tag">当前项目</span>
+    <select id="proj">
+      <option value="lowc">船舶低碳双周报</option>
+      <option value="coat">船舶涂装雷达</option>
+    </select>
+    <span class="meta" id="repoMeta">—</span>
+  </div>
+
+  <div id="msg"></div>
+
+  <div class="secretbar">
+    <label for="pat">GitHub 令牌</label>
+    <input type="password" id="pat" placeholder="ghp_... / github_pat_..." autocomplete="off">
+    <button class="btn" id="savePat">记住本机</button>
+    <button class="btn" id="clearPat">清除</button>
+    <details style="flex-basis:100%">
+      <summary>令牌怎么弄？（只需一次）</summary>
+      <ol>
+        <li>打开 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</a></li>
+        <li>Token name 随意；Expiration 建议 90 天；Resource owner 选 <code>amiya54</code>。</li>
+        <li>Repository access 选 <b>Only select repositories</b>，只勾 <code>FEISHU_WEBHOOK_URL</code> 和 <code>ship-coating-radar</code>。</li>
+        <li>Permissions → Repository permissions → <b>Contents: Read and write</b>（其余全部 No access）。</li>
+        <li>生成后复制，粘到上面，点「记住本机」。令牌只存在这台浏览器，不随页面上传。</li>
+      </ol>
+      <p style="margin:6px 0 0">看不到 Fine-grained tokens 入口？用 classic token 也行，只需勾 <code>repo</code> 一项，但权限更大，建议优先细粒度令牌。</p>
+      <p style="margin:6px 0 0">用「新建情报台」一键克隆？令牌需要 <b>Administration、Contents、Actions、Pages</b> 四项 Read and write（设模板/生成仓库/开 Actions/开 Pages 都是管理操作）。要删除误建的仓库还得加 <b>delete_repo</b>（classic 令牌勾 <code>delete_repo</code>，细粒度令牌在「允许的操作」里选 Delete repositories）。建议单独开一个建台用令牌。</p>
+    </details>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" data-tab="freq">词表</div>
+    <div class="tab" data-tab="config">config.yaml</div>
+    <div class="tab" data-tab="timeline">timeline.yaml</div>
+    <div class="tab" data-tab="wizard">新建情报台</div>
+  </div>
+
+  <div class="panel on" id="panel-freq">
+    <div class="toolbar">
+      <button class="btn" id="loadFreq">从仓库加载词表</button>
+      <span class="spacer"></span>
+      <span class="stat" id="freqStat">未加载</span>
+      <span class="dirty" id="freqDirty"></span>
+      <button class="btn" id="addGroup">+ 新建分组</button>
+      <button class="btn" id="rawFreq">看原始文本</button>
+    </div>
+    <div id="freqGroups"></div>
+    <textarea id="freqRaw" style="display:none" spellcheck="false"></textarea>
+  </div>
+
+  <div class="panel" id="panel-config">
+    <div class="toolbar">
+      <button class="btn" id="loadConfig">从仓库加载</button>
+      <span class="spacer"></span>
+      <span class="stat" id="configStat">未加载</span>
+      <span class="dirty" id="configDirty"></span>
+    </div>
+    <div class="hint">YAML 结构复杂，这里按原文编辑，不做表单化。改完点底部「写回」前会显示逐行差异。</div>
+    <textarea id="configText" spellcheck="false" placeholder="点「从仓库加载」拉取真实 config.yaml"></textarea>
+  </div>
+
+  <div class="panel" id="panel-timeline">
+    <div class="toolbar">
+      <button class="btn" id="loadTimeline">从仓库加载</button>
+      <span class="spacer"></span>
+      <span class="stat" id="timelineStat">未加载</span>
+      <span class="dirty" id="timelineDirty"></span>
+    </div>
+    <div class="hint">timeline.yaml 管的是发布节奏（双周门控、签到等），改动前建议先在原始文本里确认。</div>
+    <textarea id="timelineText" spellcheck="false" placeholder="点「从仓库加载」拉取真实 timeline.yaml"></textarea>
+  </div>
+
+  <div class="panel" id="panel-wizard">
+    <div class="card">
+      <h3>克隆一个新情报台</h3>
+      <p class="hint">选一块现成底板（低碳 / 涂装），用 GitHub 官方「从模板生成」接口完整复制全部文件，自动启用 Actions、定时 workflow 和 Pages；新仓库会自动出现在顶部项目下拉框。和当年「低碳改涂装」同一套路，只是这次点几下就完成。需要带 Administration / Contents / Actions / Pages 写权限的令牌（见上方令牌说明）。</p>
+      <div class="wizform">
+        <div><label>底板</label><select id="wizTpl"></select></div>
+        <div><label>新仓库名（英文）</label><input type="text" id="wizRepo" placeholder="例：green-fuel-radar" style="width:210px"></div>
+        <div><label>显示名（中文）</label><input type="text" id="wizLabel" placeholder="例：绿色燃料雷达" style="width:170px"></div>
+        <div style="flex-basis:100%"><label>一句话描述（可选）</label><input type="text" id="wizDesc" style="width:100%" placeholder="显示在仓库页，可留空"></div>
+      </div>
+      <button class="btn primary" id="wizCreate">创建新情报台</button>
+      <pre id="wizLog" spellcheck="false"></pre>
+    </div>
+
+    <div class="card">
+      <h3>定制清单</h3>
+      <p class="hint" id="ckHint">创建完成后，按这份清单把底板改成你自己的领域。</p>
+      <div id="wizChecklist"></div>
+    </div>
+
+    <div class="card">
+      <h3>项目列表</h3>
+      <p class="hint">配置台顶部下拉框里能管理的所有仓库。移除只影响下拉框，不动仓库本身。</p>
+      <div id="projList"></div>
+      <div class="wizform" style="margin-top:12px;align-items:flex-end">
+        <div><label>显示名</label><input type="text" id="addLabel" style="width:140px" placeholder="例：某雷达"></div>
+        <div><label>仓库名</label><input type="text" id="addRepo" style="width:200px" placeholder="例：xxx-radar"></div>
+        <div><label>分支</label><input type="text" id="addBranch" style="width:90px" placeholder="留空自动识别"></div>
+        <div><button class="btn" id="addProj">添加已有仓库</button></div>
+        <div><button class="btn" id="projPages">为当前项目开启 Pages</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <button class="btn primary" id="writeBack" disabled>写回 GitHub</button>
+      <span class="stat">提交说明 <input type="text" id="commitMsg" placeholder="例：词表补绿氢条目" style="width:230px;font-family:var(--sans);font-size:12.5px;padding:5px 8px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--body)"></span>
+    </div>
+    <div class="hint" style="margin:10px 0 0">写回前会弹窗展示逐行差异，确认后才提交。提交记录可在仓库 Actions / Commits 里查到。</div>
+  </div>
+
+  <footer>
+    配置台只读写你自己仓库的文件 · 不经过任何第三方服务器 · 令牌仅存本机浏览器
+  </footer>
+</div>
+
+<div class="overlay" id="diffOverlay">
+  <div class="modal">
+    <h2>确认写回</h2>
+    <div class="hint" id="diffMeta"></div>
+    <div class="diff" id="diffBody"></div>
+    <div class="foot">
+      <button class="btn" id="diffCancel">取消</button>
+      <button class="btn primary" id="diffConfirm">确认提交</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---------- 项目注册表：内置底板 + 本机保存的自建/外接仓库 ----------
+  var DEFAULT_PROJECTS = [
+    { id:'lowc', label:'船舶低碳双周报', repo:'FEISHU_WEBHOOK_URL', branch:'master', builtin:true },
+    { id:'coat', label:'船舶涂装雷达',   repo:'ship-coating-radar', branch:'main',   builtin:true }
+  ];
+  var REG_KEY = 'cfgdesk_projects_v1';
+  function loadReg(){ try { return JSON.parse(localStorage.getItem(REG_KEY)||'[]'); } catch(e){ return []; } }
+  function saveReg(list){ try { localStorage.setItem(REG_KEY, JSON.stringify(list)); } catch(e){} }
+  var registry = loadReg();
+  var PROJECTS = {};
+  DEFAULT_PROJECTS.concat(registry).forEach(function(p){ PROJECTS[p.id] = p; });
+
+  var $ = function(id){ return document.getElementById(id); };
+  var projSel = $('proj');
+  var detected = null;
+  (function(){
+    var host = location.hostname || '', path = location.pathname || '';
+    DEFAULT_PROJECTS.concat(registry).forEach(function(p){
+      if (!detected && (host.indexOf(p.repo) >= 0 || path.indexOf(p.repo) >= 0)) detected = p.id;
+    });
+    if (!detected) detected = 'lowc';
+  })();
+
+  function rebuildProjSelect(keepId){
+    var cur = keepId || projSel.value || detected;
+    projSel.innerHTML = '';
+    DEFAULT_PROJECTS.concat(registry).forEach(function(p){
+      var o = document.createElement('option');
+      o.value = p.id; o.textContent = p.label;
+      projSel.appendChild(o);
+    });
+    projSel.value = PROJECTS[cur] ? cur : DEFAULT_PROJECTS[0].id;
+    updateMeta();
+  }
+  function proj(){ return PROJECTS[projSel.value]; }
+  function switchProject(id, tab){
+    if (!PROJECTS[id]) return;
+    projSel.value = id; updateMeta();
+    if (tab){ var t = document.querySelector('.tab[data-tab="'+tab+'"]'); if (t) t.click(); }
+  }
+  projSel.addEventListener('change', updateMeta);
+  rebuildProjSelect(detected);
+  function rawURL(file){
+    var p = proj();
+    return 'https://raw.githubusercontent.com/amiya54/' + p.repo + '/' + p.branch + '/config/' + file;
+  }
+  function apiURL(file){
+    var p = proj();
+    return 'https://api.github.com/repos/amiya54/' + p.repo + '/contents/config/' + file;
+  }
+  function updateMeta(){
+    var p = proj();
+    $('repoMeta').innerHTML = '仓库 <span class="badge">' + p.repo + '</span> · 分支 <span class="badge">' + p.branch + '</span>';
+    resetAll();
+  }
+
+  // ---------- 消息条 ----------
+  function msg(text, kind){
+    var box = $('msg');
+    box.innerHTML = text ? '<div class="notice ' + (kind||'') + '">' + text + '</div>' : '';
+    if (text) box.scrollIntoView({block:'nearest'});
+  }
+
+  // ---------- 令牌 ----------
+  var PAT_KEY = 'cfgdesk_pat_v1';
+  try { $('pat').value = localStorage.getItem(PAT_KEY) || ''; } catch(e){}
+  $('savePat').addEventListener('click', function(){
+    try { localStorage.setItem(PAT_KEY, $('pat').value.trim()); msg('令牌已存到本机浏览器，下次打开自动带出。','ok'); }
+    catch(e){ msg('浏览器不允许本地存储，令牌不会保留。','warn'); }
+  });
+  $('clearPat').addEventListener('click', function(){
+    try { localStorage.removeItem(PAT_KEY); } catch(e){}
+    $('pat').value = ''; msg('本机令牌已清除。','ok');
+  });
+
+  // ---------- Tab ----------
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('on'); });
+      document.querySelectorAll('.panel').forEach(function(x){ x.classList.remove('on'); });
+      t.classList.add('on');
+      $('panel-' + t.dataset.tab).classList.add('on');
+    });
+  });
+
+  // ---------- 状态 ----------
+  var state = { freq:{orig:'',sha:null,loaded:false}, config:{orig:'',sha:null,loaded:false}, timeline:{orig:'',sha:null,loaded:false} };
+
+  function resetAll(){
+    state = { freq:{orig:'',sha:null,loaded:false}, config:{orig:'',sha:null,loaded:false}, timeline:{orig:'',sha:null,loaded:false} };
+    $('freqGroups').innerHTML = ''; $('freqRaw').style.display='none'; $('freqRaw').value='';
+    $('configText').value=''; $('timelineText').value='';
+    ['freq','config','timeline'].forEach(function(k){ $('freqStat')&&0; });
+    $('freqStat').textContent='未加载'; $('configStat').textContent='未加载'; $('timelineStat').textContent='未加载';
+    ['freqDirty','configDirty','timelineDirty'].forEach(function(id){ $(id).textContent=''; });
+    $('writeBack').disabled = true;
+    msg('');
+  }
+
+  // ---------- 词表解析 / 序列化 ----------
+  // 结构：前置注释块 + 若干组。组内每一行按【原始顺序】保存为 item，
+  // 这样注释插在词中间时不会被搬家，写回后的 diff 只剩真正改动的行。
+  // item = { t:'n'注释 / 'a'@限制 / 'w'词条, v:原文 }
+  function parseFreq(text){
+    var lines = text.replace(/\r\n?/g,'\n').split('\n');
+    var header = [], groups = [], cur = null;
+    for (var i=0;i<lines.length;i++){
+      var line = lines[i];
+      if (/^\s*\[[^\]]+\]\s*$/.test(line)){
+        cur = { name:line.trim(), items:[] };
+        groups.push(cur);
+        continue;
+      }
+      if (!cur){
+        if (line.trim()==='' && header.length && header[header.length-1].trim()==='') continue;
+        header.push(line);
+        continue;
+      }
+      if (line.trim()==='') { cur = null; continue; }
+      var s = line.trim();
+      if (s.charAt(0)==='#') cur.items.push({t:'n',v:line});
+      else if (/^@\d+$/.test(s)) cur.items.push({t:'a',v:s});
+      else cur.items.push({t:'w',v:s});
+    }
+    while (header.length && header[header.length-1].trim()==='') header.pop();
+    return { header:header, groups:groups };
+  }
+  function serializeFreq(doc){
+    var out = doc.header.slice();
+    while (out.length && out[out.length-1].trim()==='') out.pop();
+    out.push('', '');
+    doc.groups.forEach(function(g){
+      out.push(g.name);
+      g.items.forEach(function(it){ out.push(it.v); });
+      out.push('');
+    });
+    return out.join('\n').replace(/\n+$/,'') + '\n';
+  }
+  function wordsOf(g){ return g.items.filter(function(it){ return it.t==='w'; }); }
+  function kindOf(w){
+    if (/^\//.test(w)) return '/';
+    if (/^\+/.test(w)) return '+';
+    if (/^!/.test(w)) return '!';
+    if (/^@/.test(w)) return '@';
+    if (w.indexOf('=>')>=0) return '=';
+    return '·';
+  }
+
+  // ---------- 渲染词表 ----------
+  function renderFreq(){
+    var doc = state.freq.doc;
+    var host = $('freqGroups');
+    host.innerHTML = '';
+    var total = 0;
+    doc.groups.forEach(function(g, gi){
+      var words = wordsOf(g);
+      total += words.length;
+      var box = document.createElement('div'); box.className='group';
+      var head = document.createElement('div'); head.className='ghead';
+      head.innerHTML = '<span class="gname"></span><span class="gcount"></span><span class="arrow">▾ 展开/收起</span>';
+      head.querySelector('.gname').textContent = g.name.replace(/^\[|\]$/g,'');
+      var attrs = g.items.filter(function(it){return it.t==='a';}).map(function(it){return it.v;});
+      head.querySelector('.gcount').textContent = words.length + ' 词' + (attrs.length? ' · '+attrs.join(' ') : '');
+      var bodyEl = document.createElement('div'); bodyEl.className='gbody';
+      head.addEventListener('click', function(){ bodyEl.style.display = bodyEl.style.display==='none'?'':'none'; });
+      g.items.forEach(function(it, ii){
+        if (it.t==='n'){
+          var note = document.createElement('div'); note.className='gnote'; note.textContent=it.v;
+          bodyEl.appendChild(note); return;
+        }
+        var row = document.createElement('div'); row.className='row';
+        var pt = document.createElement('span'); pt.className='ptype'; pt.textContent=kindOf(it.v); pt.title=typeName(it.v);
+        var inp = document.createElement('input'); inp.type='text'; inp.value=it.v; inp.spellcheck=false;
+        inp.addEventListener('input', function(){ it.v=inp.value; markDirty('freq'); });
+        var del = document.createElement('button'); del.className='del'; del.textContent='×'; del.title='删除这一行';
+        del.addEventListener('click', function(){ g.items.splice(ii,1); renderFreq(); markDirty('freq'); });
+        row.appendChild(pt); row.appendChild(inp); row.appendChild(del); bodyEl.appendChild(row);
+      });
+      var addrow = document.createElement('div'); addrow.className='addrow';
+      var addin = document.createElement('input'); addin.type='text'; addin.placeholder='加一个词，回车确认（/正则/ +必含 !排除）'; addin.spellcheck=false;
+      function addIt(){
+        var v = addin.value.trim(); if(!v) return;
+        g.items.push({t: /^@\d+$/.test(v)?'a':'w', v:v});
+        renderFreq(); markDirty('freq');
+        var boxes = host.children; if (boxes[gi]){
+          var rows = boxes[gi].querySelectorAll('.row input'); if(rows.length) rows[rows.length-1].focus();
+        }
+      }
+      addin.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); addIt(); } });
+      var addbtn = document.createElement('button'); addbtn.className='btn'; addbtn.textContent='加词';
+      addbtn.addEventListener('click', addIt);
+      addrow.appendChild(addin); addrow.appendChild(addbtn); bodyEl.appendChild(addrow);
+      box.appendChild(head); box.appendChild(bodyEl); host.appendChild(box);
+    });
+    var re = 0, plus = 0, bang = 0;
+    doc.groups.forEach(function(g){ wordsOf(g).forEach(function(it){ var k=kindOf(it.v); if(k==='/')re++; else if(k==='+')plus++; else if(k==='!')bang++; }); });
+    $('freqStat').innerHTML = '<b>'+doc.groups.length+'</b> 组 · <b>'+total+'</b> 词 <span class="badge">/正则 '+re+'</span> <span class="badge">+必含 '+plus+'</span> <span class="badge">!排除 '+bang+'</span>';
+  }
+  function typeName(w){
+    return { '/':'正则表达式','+':'必含词','!':'排除词','@':'条数限制','=':'别名映射','·':'普通词' }[kindOf(w)];
+  }
+  function collectFreq(){
+    var doc = state.freq.doc;
+    // 从原始文本视图同步回来
+    if ($('freqRaw').style.display!=='none'){
+      doc.header = parseFreq($('freqRaw').value).header;
+      doc.groups = parseFreq($('freqRaw').value).groups;
+    }
+    return serializeFreq(doc);
+  }
+  $('addGroup').addEventListener('click', function(){
+    if (!state.freq.loaded){ msg('先加载词表。','warn'); return; }
+    var name = prompt('新分组名（不带方括号）：','新分组');
+    if (!name || !name.trim()) return;
+    state.freq.doc.groups.push({ name:'['+name.trim()+']', items:[] });
+    renderFreq(); markDirty('freq');
+  });
+  var rawMode = false;
+  $('rawFreq').addEventListener('click', function(){
+    if (!state.freq.loaded){ msg('先加载词表。','warn'); return; }
+    rawMode = !rawMode;
+    if (rawMode){
+      collectFreqFromUI();
+      $('freqRaw').value = serializeFreq(state.freq.doc);
+      $('freqGroups').style.display='none'; $('freqRaw').style.display='block';
+      $('rawFreq').textContent='回分组视图';
+    } else {
+      var parsed = parseFreq($('freqRaw').value);
+      state.freq.doc = parsed;
+      $('freqGroups').style.display='block'; $('freqRaw').style.display='none';
+      $('rawFreq').textContent='看原始文本';
+      renderFreq();
+    }
+  });
+  function collectFreqFromUI(){ /* UI 改动已即时写回 state.freq.doc */ }
+
+  // ---------- 加载 ----------
+  // 国内网络下 raw.githubusercontent.com 常直接 Failed to fetch，故多源依次回退：
+  // 有令牌：API 优先（内容最新且顺带缓存 sha）→ jsDelivr → raw；
+  // 无令牌：raw → jsDelivr（国内 CDN 更稳）→ API 匿名（有 60 次/时限流）。
+  function txtFetch(url){
+    return fetch(url, {cache:'no-store'}).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.text().then(function(t){ return {text:t, sha:null}; });
+    });
+  }
+  function apiFetch(file, token){
+    var headers = { 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28', 'Cache-Control':'no-cache' };
+    if (token) headers['Authorization'] = 'Bearer '+token;
+    return fetch(apiURL(file)+'?ref='+encodeURIComponent(proj().branch), {headers:headers})
+      .then(function(r){
+        if(!r.ok) throw new Error('HTTP '+r.status+(r.status===403?'（匿名限流，稍后再试）':r.status===401?'（令牌无效）':''));
+        return r.json();
+      }).then(function(d){
+        var bin = atob(d.content.replace(/\s/g,''));
+        var bytes = Uint8Array.from(bin, function(c){ return c.charCodeAt(0); });
+        return { text:new TextDecoder().decode(bytes), sha:d.sha };
+      });
+  }
+  function jsdURL(file){
+    var p = proj();
+    return 'https://cdn.jsdelivr.net/gh/amiya54/'+p.repo+'@'+p.branch+'/config/'+file;
+  }
+  function fetchConfig(file){
+    var token = $('pat').value.trim();
+    var chain = token
+      ? [ ['GitHub API', function(){ return apiFetch(file, token); }],
+          ['jsDelivr',  function(){ return txtFetch(jsdURL(file)); }],
+          ['raw',       function(){ return txtFetch(rawURL(file)); }] ]
+      : [ ['raw',       function(){ return txtFetch(rawURL(file)); }],
+          ['jsDelivr',  function(){ return txtFetch(jsdURL(file)); }],
+          ['GitHub API',function(){ return apiFetch(file, null); }] ];
+    var i = 0, fails = [];
+    function next(){
+      if (i >= chain.length) throw new Error('三处数据源都连不上：'+fails.join('；')+'。多为网络限制，换网络或开代理后重试。');
+      var cur = chain[i++];
+      return cur[1]().catch(function(e){ fails.push(cur[0]+'('+e.message+')'); return next(); });
+    }
+    return next();
+  }
+  function load(kind){
+    var file = kind==='freq'?'frequency_words.txt':kind==='config'?'config.yaml':'timeline.yaml';
+    var btn = $('load'+kind.charAt(0).toUpperCase()+kind.slice(1));
+    if (btn){ btn.disabled=true; btn.textContent='加载中…'; }
+    fetchConfig(file)
+      .then(function(res){
+        var text = res.text;
+        // 词表以序列化后的文本为基准：解析会规范化组间多余空行，
+        // 若拿原文当基准，用户什么都没改也会看到几处空行 diff。
+        state[kind].orig = kind==='freq' ? serializeFreq(parseFreq(text)) : text;
+        state[kind].sha = res.sha;
+        state[kind].loaded = true;
+        if (kind==='freq'){
+          state.freq.doc = parseFreq(text);
+          $('freqGroups').style.display='block'; $('freqRaw').style.display='none'; rawMode=false;
+          $('rawFreq').textContent='看原始文本';
+          renderFreq();
+          $('freqStat').innerHTML = $('freqStat').innerHTML + ' · 已加载';
+          (function(){ var s=$('freqStat'); if((s.textContent.match(/已加载/g)||[]).length>1) s.textContent=s.textContent.replace(/ · 已加载$/,''); })();
+        } else {
+          $(kind+'Text').value = text;
+          $(kind+'Stat').textContent = text.split('\n').length + ' 行 · 已加载';
+        }
+        msg('已加载 ' + proj().repo + ' 的 ' + file + '。','ok');
+        refreshWriteBtn();
+      })
+      .catch(function(e){ msg('加载失败：'+e.message,'err'); })
+      .finally(function(){ if(btn){ btn.disabled=false; btn.textContent='从仓库加载'; } });
+  }
+  $('loadFreq').addEventListener('click', function(){ load('freq'); });
+  $('loadConfig').addEventListener('click', function(){ load('config'); });
+  $('loadTimeline').addEventListener('click', function(){ load('timeline'); });
+
+  // ---------- 脏标记 / 写回按钮 ----------
+  function current(kind){
+    if (kind==='freq'){
+      if ($('freqRaw').style.display!=='none') return $('freqRaw').value;
+      return state.freq.loaded ? serializeFreq(state.freq.doc) : '';
+    }
+    return $(kind+'Text').value;
+  }
+  function markDirty(kind){
+    var changed = state[kind].loaded && current(kind)!==state[kind].orig;
+    $(kind+'Dirty').textContent = changed?'● 有改动':'';
+    refreshWriteBtn();
+  }
+  ['configText','timelineText'].forEach(function(id){
+    var kind = id==='configText'?'config':'timeline';
+    $(id).addEventListener('input', function(){ markDirty(kind); });
+  });
+  function dirtyKinds(){
+    return ['freq','config','timeline'].filter(function(k){ return state[k].loaded && current(k)!==state[k].orig; });
+  }
+  function refreshWriteBtn(){ $('writeBack').disabled = dirtyKinds().length===0 || !$('pat').value.trim(); }
+  $('pat').addEventListener('input', refreshWriteBtn);
+
+  // ---------- Diff ----------
+  function diffLines(a, b){
+    var A=a.replace(/\r\n?/g,'\n').split('\n'), B=b.replace(/\r\n?/g,'\n').split('\n');
+    var n=A.length, m=B.length, dp=[];
+    for(var i=0;i<=n;i++){ dp[i]=new Array(m+1).fill(0); }
+    for(i=n-1;i>=0;i--) for(var j=m-1;j>=0;j--)
+      dp[i][j] = A[i]===B[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j],dp[i][j+1]);
+    var out=[], x=0,y=0;
+    while(x<n && y<m){
+      if(A[x]===B[y]){ out.push([' ',A[x]]); x++; y++; }
+      else if(dp[x+1][y] >= dp[x][y+1]){ out.push(['-',A[x]]); x++; }
+      else { out.push(['+',B[y]]); y++; }
+    }
+    while(x<n){ out.push(['-',A[x]]); x++; }
+    while(y<m){ out.push(['+',B[y]]); y++; }
+    var added=0, removed=0;
+    out.forEach(function(r){ if(r[0]==='+')added++; if(r[0]==='-')removed++; });
+    return { rows:out, added:added, removed:removed };
+  }
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // ---------- 写回 ----------
+  var pending = null;
+  $('writeBack').addEventListener('click', function(){
+    var kinds = dirtyKinds();
+    if (!kinds.length){ msg('没有改动需要写回。','warn'); return; }
+    var token = $('pat').value.trim();
+    if (!token){ msg('先填 GitHub 令牌。','warn'); return; }
+    if (kinds.length>1){
+      msg('一次只写回一个文件：当前有改动的是 ' + kinds.join('、') + '，请分批写。','warn');
+      return;
+    }
+    var kind = kinds[0];
+    var file = kind==='freq'?'frequency_words.txt':kind==='config'?'config.yaml':'timeline.yaml';
+    var d = diffLines(state[kind].orig, current(kind));
+    pending = { kind:kind, file:file, text:current(kind) };
+    $('diffMeta').innerHTML = '仓库 <b>'+proj().repo+'</b> · 文件 <code>config/'+file+'</code> · 新增 '+d.added+' 行 / 删除 '+d.removed+' 行';
+    $('diffBody').innerHTML = d.rows.map(function(r){
+      var cls = r[0]==='+'?'add':r[0]==='-'?'del2':'';
+      return '<div class="'+cls+'">'+esc(r[0]+' '+r[1])+'</div>';
+    }).join('');
+    $('diffOverlay').classList.add('on');
+  });
+  $('diffCancel').addEventListener('click', function(){ $('diffOverlay').classList.remove('on'); pending=null; });
+  $('diffConfirm').addEventListener('click', function(){
+    if (!pending) return;
+    var btn = $('diffConfirm'); btn.disabled=true; btn.textContent='提交中…';
+    var p = pending;
+    function doPut(sha){
+      var bytes = new TextEncoder().encode(p.text);
+      var bin=''; for(var i=0;i<bytes.length;i+=0x8000){ bin += String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000)); }
+      var content = btoa(bin);
+      var cm = $('commitMsg').value.trim() || ('配置台更新 '+p.file);
+      return fetch(apiURL(p.file), {
+        method:'PUT',
+        headers:{ 'Authorization':'Bearer '+$('pat').value.trim(), 'Accept':'application/vnd.github+json',
+          'Content-Type':'application/json', 'X-GitHub-Api-Version':'2022-11-28' },
+        body: JSON.stringify({ message:cm, content:content, sha:sha, branch:proj().branch })
+      });
+    }
+    var cachedSha = state[p.kind].sha;
+    var chain = cachedSha ? Promise.resolve({ r:null, sha:cachedSha })
+      : fetch(apiURL(p.file)+'?ref='+encodeURIComponent(proj().branch), {
+          headers:{ 'Authorization':'Bearer '+$('pat').value.trim(), 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28' }
+        }).then(function(r){ if(!r.ok) throw new Error('读取 sha 失败 HTTP '+r.status); return r.json().then(function(d){ return {r:r, sha:d.sha}; }); });
+    chain.then(function(x){ return doPut(x.sha); })
+    .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('写回失败 HTTP '+r.status+' '+t.slice(0,200)); }); return r.json(); })
+    .then(function(){
+      state[p.kind].orig = current(p.kind);
+      state[p.kind].sha = null; // 文件 sha 已变，下次加载重新取，避免用过期 sha 提交冲突
+      markDirty(p.kind);
+      $('diffOverlay').classList.remove('on'); pending=null;
+      msg('已写回 '+proj().repo+' 的 config/'+p.file+'。仓库提交记录已更新，下次抓取生效。','ok');
+    })
+    .catch(function(e){
+      var m = e.message;
+      if (m.indexOf('409')>=0) m = '文件在别处被改过（sha 冲突），请关闭弹窗重新点「从仓库加载」再改一次。';
+      msg(m,'err');
+    })
+    .finally(function(){ btn.disabled=false; btn.textContent='确认提交'; });
+  });
+
+  // ---------- 新建情报台 ----------
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+  function ghReq(method, path, body){
+    var token = $('pat').value.trim();
+    if (!token) return Promise.reject(new Error('缺少 GitHub 令牌'));
+    return fetch('https://api.github.com' + path, {
+      method: method,
+      headers: { 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28' },
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function(r){
+      if (!r.ok) return r.text().then(function(t){
+        throw new Error('HTTP ' + r.status + ' ' + String(t||'').replace(/\s+/g,' ').slice(0,160));
+      });
+      return r.status === 204 ? null : r.json();
+    });
+  }
+  function wlog(s){
+    var box = $('wizLog'); box.style.display='block';
+    box.textContent += s + '\n'; box.scrollTop = box.scrollHeight;
+  }
+  function renderWizTpl(){
+    var sel = $('wizTpl'); sel.innerHTML='';
+    DEFAULT_PROJECTS.concat(registry).forEach(function(p){
+      var o = document.createElement('option');
+      o.value = p.id; o.textContent = p.label + '（' + p.repo + '）';
+      sel.appendChild(o);
+    });
+  }
+  function renderProjList(){
+    var host = $('projList'); host.innerHTML='';
+    DEFAULT_PROJECTS.concat(registry).forEach(function(p){
+      var row = document.createElement('div'); row.className='projrow';
+      var name = document.createElement('span'); name.textContent = p.label;
+      var repo = document.createElement('span'); repo.className='repo'; repo.textContent = p.repo + ' @ ' + p.branch;
+      row.appendChild(name); row.appendChild(repo);
+      if (p.builtin){
+        var tag = document.createElement('span'); tag.className='badge'; tag.textContent='底板';
+        row.appendChild(tag);
+      } else {
+        var del = document.createElement('button'); del.className='del'; del.textContent='×';
+        del.title='从下拉框移除（不动仓库本身）';
+        del.addEventListener('click', function(){
+          registry = registry.filter(function(x){ return x.id !== p.id; });
+          saveReg(registry);
+          rebuildProjSelect(DEFAULT_PROJECTS[0].id);
+          renderProjList(); renderWizTpl(); renderChecklist();
+        });
+        row.appendChild(del);
+      }
+      host.appendChild(row);
+    });
+  }
+  var CK_ITEMS = [
+    { kind:'edit', tab:'freq', file:'config/frequency_words.txt',
+      why:'把词表换成新领域：分组、词条、排除词。正则记得卡词边界（教训：methanol 里含 ethanol，必须 \\b(..)?ethanol\\b）。' },
+    { kind:'edit', tab:'config', file:'config/config.yaml',
+      why:'报告标题、webhook 环境变量名、AI 分析 prompt（板块口径换成新领域）、告警阈值。' },
+    { kind:'edit', tab:'timeline', file:'config/timeline.yaml',
+      why:'发布节奏：双周门控、签到 cron。想改每周/每日在这里调。' },
+    { kind:'web', file:'scripts/apply_patches.py',
+      why:'HEAD_TITLE 报告大标题、同义词簇、领域专项补丁都在这个文件里。' },
+    { kind:'web', file:'scripts/fetch_regulations.py',
+      why:'法规白名单正则（底板里叫 COATING_RE），按新领域换关键词。' },
+    { kind:'web', file:'README.md 与 docs 标题',
+      why:'门户展示文案，别让人点进新雷达还看到旧领域的介绍。' },
+    { kind:'secret', file:'仓库 Secrets（必须手动）',
+      why:'Fork 不带 Secrets！AI_API_KEY、webhook 地址都要在新仓库 Settings → Secrets and variables → Actions 重新加。' },
+    { kind:'run', file:'手动跑一次 workflow',
+      why:'到新仓库 Actions 页选抓取 workflow 点 Run workflow，确认抓取 → AI → 推送全链路通。' }
+  ];
+  function renderChecklist(pid){
+    var host = $('wizChecklist'); host.innerHTML='';
+    var id = pid || projSel.value;
+    var p = PROJECTS[id];
+    $('ckHint').textContent = p
+      ? '目标仓库：' + p.repo + '（' + p.branch + ' 分支）。前三项在配置台里直接改，其余去 GitHub 网页编辑器。'
+      : '创建完成后，按这份清单把底板改成你自己的领域。';
+    CK_ITEMS.forEach(function(it, i){
+      var row = document.createElement('div'); row.className='ck';
+      var num = document.createElement('span'); num.className='num'; num.textContent = i+1;
+      var body = document.createElement('div'); body.className='body';
+      var t = document.createElement('b'); t.textContent = it.file; body.appendChild(t);
+      var why = document.createElement('div'); why.className='why'; why.textContent = it.why; body.appendChild(why);
+      row.appendChild(num); row.appendChild(body);
+      if (!p){ host.appendChild(row); return; }
+      if (it.kind === 'edit'){
+        var b = document.createElement('button'); b.className='btn'; b.textContent='去配置台改';
+        b.addEventListener('click', function(){ switchProject(id, it.tab); load(it.tab); });
+        row.appendChild(b);
+      } else if (it.kind === 'web'){
+        var a = document.createElement('a'); a.textContent='去 GitHub 编辑';
+        a.target='_blank'; a.rel='noopener';
+        a.href = 'https://github.com/amiya54/' + p.repo + '/edit/' + p.branch + '/' + (it.file.indexOf(' ')<0 ? it.file : '');
+        row.appendChild(a);
+      } else if (it.kind === 'secret'){
+        var a2 = document.createElement('a'); a2.textContent='去加 Secrets';
+        a2.target='_blank'; a2.rel='noopener';
+        a2.href = 'https://github.com/amiya54/' + p.repo + '/settings/secrets/actions';
+        row.appendChild(a2);
+      } else if (it.kind === 'run'){
+        var a3 = document.createElement('a'); a3.textContent='去 Actions';
+        a3.target='_blank'; a3.rel='noopener';
+        a3.href = 'https://github.com/amiya54/' + p.repo + '/actions';
+        row.appendChild(a3);
+      }
+      host.appendChild(row);
+    });
+  }
+  var wizBusy = false;
+  $('wizCreate').addEventListener('click', function(){
+    if (wizBusy) return;
+    var token = $('pat').value.trim();
+    if (!token){ msg('先在上面填 GitHub 令牌。克隆仓库需要 Administration / Actions / Pages 权限，见令牌栏说明。','warn'); return; }
+    var tpl = PROJECTS[$('wizTpl').value];
+    var newRepo = $('wizRepo').value.trim();
+    var label = $('wizLabel').value.trim() || newRepo;
+    var desc = $('wizDesc').value.trim();
+    if (!tpl){ msg('选一块底板。','warn'); return; }
+    if (!/^[A-Za-z0-9_.-]{1,90}$/.test(newRepo)){ msg('仓库名只能用英文、数字、点、横线、下划线。','warn'); return; }
+    var dup = registry.some(function(x){ return x.repo.toLowerCase()===newRepo.toLowerCase(); })
+      || DEFAULT_PROJECTS.some(function(x){ return x.repo.toLowerCase()===newRepo.toLowerCase(); });
+    if (dup){ msg('配置台里已经有这个仓库了，顶部下拉框切换即可。','warn'); return; }
+    wizBusy = true;
+    var btn = $('wizCreate'); btn.disabled=true; btn.textContent='创建中…';
+    $('wizLog').textContent='';
+    (async function(){
+      // 用 GitHub 官方「从模板生成仓库」接口：完整复制文件、非 fork 关系，
+      // 绕开「不能 fork 自己账号仓库」的限制（2026-11-17 事故后的可靠方案）。
+      var finalBranch = tpl.branch;
+      wlog('① 把底板 ' + tpl.repo + ' 临时设为模板 …');
+      await ghReq('PATCH', '/repos/amiya54/' + tpl.repo, { is_template:true });
+      var created = false;
+      try {
+        wlog('② 从模板生成新仓库 ' + newRepo + ' …');
+        var gen = await ghReq('POST', '/repos/amiya54/' + tpl.repo + '/generate',
+          { owner:'amiya54', name:newRepo, description: desc || ('基于 ' + tpl.label + ' 的情报台') });
+        created = true;
+        finalBranch = gen.default_branch || tpl.branch;
+        wlog('✓ 新仓库已生成（默认分支 ' + finalBranch + '，完整复制全部文件）');
+      } finally {
+        // 无论成功失败，都把底板恢复成非模板，不留副作用。
+        try { await ghReq('PATCH', '/repos/amiya54/' + tpl.repo, { is_template:false }); wlog('✓ 底板已恢复为非模板'); }
+        catch(e){ wlog('⚠ 底板模板状态恢复失败，请到 ' + tpl.repo + ' 的 Settings 手动关掉 Template repository。'); }
+      }
+      // 等新仓库文件就绪（generate 是异步的）
+      var repo = null;
+      for (var i=0; i<20; i++){
+        try { repo = await ghReq('GET', '/repos/amiya54/' + newRepo); if (repo && repo.default_branch) break; } catch(e){}
+        await sleep(2000);
+      }
+      if (!repo) throw new Error('仓库已生成但读取未就绪，稍后刷新页面用「添加已有仓库」接入即可。');
+      try {
+        await ghReq('PUT', '/repos/amiya54/' + newRepo + '/actions/permissions', { enabled:true, allowed_actions:'all' });
+        wlog('✓ Actions 已启用');
+      } catch(e){ wlog('⚠ Actions 未能自动启用（' + e.message + '），去新仓库 Settings → Actions 手动允许一次。'); }
+      try {
+        var wfs = await ghReq('GET', '/repos/amiya54/' + newRepo + '/actions/workflows');
+        var n = 0;
+        for (var k=0; k<(wfs.workflows||[]).length; k++){
+          try { await ghReq('PUT', '/repos/amiya54/' + newRepo + '/actions/workflows/' + wfs.workflows[k].id + '/enable'); n++; } catch(e){}
+        }
+        wlog('✓ 已启用定时 workflow ' + n + ' 个');
+      } catch(e){ wlog('⚠ 定时 workflow 启用失败，去 Actions 页逐个 Enable。'); }
+      try {
+        await ghReq('POST', '/repos/amiya54/' + newRepo + '/pages', { build_type:'workflow' });
+        wlog('✓ Pages 已开启（workflow 构建）');
+      } catch(e){
+        if (String(e.message).indexOf('409')>=0) wlog('✓ Pages 已存在，跳过');
+        else wlog('⚠ Pages 开启失败（' + e.message + '），可稍后用「为当前项目开启 Pages」单独开。');
+      }
+      var item = { id:newRepo, label:label, repo:newRepo, branch:finalBranch };
+      registry.push(item); saveReg(registry);
+      PROJECTS[newRepo] = item;
+      rebuildProjSelect(newRepo); renderProjList(); renderWizTpl(); renderChecklist(newRepo);
+      wlog('✓ 完成！顶部项目已切到「' + label + '」，按下面定制清单开工。');
+      msg('新情报台 <b>'+newRepo+'</b> 建好了：全部文件已从底板复制、Actions/Pages 已配置。注意新仓库不带 Secrets，按清单第 7 步补 AI_API_KEY 和 webhook。','ok');
+    })().catch(function(e){
+      wlog('✗ ' + e.message);
+      msg('创建中断：' + e.message + '。已完成的步骤不重做——若仓库已在 GitHub 上存在，改用「添加已有仓库」接入。','err');
+    }).finally(function(){ wizBusy=false; btn.disabled=false; btn.textContent='创建新情报台'; });
+  });
+  $('projPages').addEventListener('click', function(){
+    var p = proj(); if (!p) return;
+    if (!$('pat').value.trim()){ msg('先填 GitHub 令牌。','warn'); return; }
+    ghReq('POST', '/repos/amiya54/' + p.repo + '/pages', { build_type:'workflow' })
+      .then(function(){ msg('已为 ' + p.repo + ' 开启 Pages（workflow 构建），首次部署随下一次抓取 workflow 完成。','ok'); })
+      .catch(function(e){
+        if (String(e.message).indexOf('409')>=0) msg(p.repo + ' 的 Pages 已存在。','ok');
+        else msg('Pages 开启失败：' + e.message + '（需要 Administration 权限令牌）','err');
+      });
+  });
+  $('addProj').addEventListener('click', function(){
+    if (!$('pat').value.trim()){ msg('先填 GitHub 令牌。','warn'); return; }
+    var repo = $('addRepo').value.trim().replace(/^amiya54\//i,'').replace(/\/+$/,'');
+    var branch = $('addBranch').value.trim();
+    var label = $('addLabel').value.trim() || repo;
+    if (!/^[A-Za-z0-9_.-]{1,90}$/.test(repo)){ msg('仓库名格式不对。','warn'); return; }
+    if (PROJECTS[repo]){ msg('配置台里已经有这个仓库。','warn'); return; }
+    ghReq('GET', '/repos/amiya54/' + repo).then(function(r){
+      var item = { id:repo, label:label, repo:repo, branch:(r && r.default_branch) || branch || 'main' };
+      registry.push(item); saveReg(registry);
+      PROJECTS[repo] = item;
+      rebuildProjSelect(repo); renderProjList(); renderWizTpl(); renderChecklist(repo);
+      msg('已把 ' + repo + ' 加入配置台（分支 ' + item.branch + '）。','ok');
+      ['addLabel','addRepo','addBranch'].forEach(function(x){ $(x).value=''; });
+    }).catch(function(e){ msg('仓库访问失败：' + e.message,'err'); });
+  });
+  renderWizTpl(); renderProjList(); renderChecklist();
+})();
+</script>
+</body>
+</html>
